@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的个人主页</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo">My Site</h1>
+            <ul class="nav-links">
+                <li><a href="#home">首页</a></li>
+                <li><a href="#about">关于</a></li>
+                <li><a href="#skills">技能</a></li>
+                <li><a href="#contact">联系</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 首页区域 -->
+    <section id="home" class="hero">
+        <div class="container">
+            <h2 id="greeting"></h2>
+            <p>欢迎来到我的第一个静态网站 🎉</p>
+            <a href="#about" class="btn">了解更多</a>
+        </div>
+    </section>
+
+    <!-- 关于区域 -->
+    <section id="about" class="section">
+        <div class="container">
+            <h2>关于我</h2>
+            <p>这是用 HTML + CSS + JavaScript 做的静态网站。</p>
+            <p>不需要数据库，不需要服务器，直接打开就能用！</p>
+        </div>
+    </section>
+
+    <!-- 技能区域 -->
+    <section id="skills" class="section bg-gray">
+        <div class="container">
+            <h2>学习路线</h2>
+            <div class="skills-grid">
+                <div class="skill-card">
+                    <h3>HTML</h3>
+                    <p>网页的结构骨架</p>
+                </div>
+                <div class="skill-card">
+                    <h3>CSS</h3>
+                    <p>页面的样式美化</p>
+                </div>
+                <div class="skill-card">
+                    <h3>JavaScript</h3>
+                    <p>交互和动态效果</p>
+                </div>
+                <div class="skill-card">
+                    <h3>部署上线的3种方式</h3>
+                    <p>GitHub Pages / Vercel / Netlify</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 联系区域 -->
+    <section id="contact" class="section">
+        <div class="container">
+            <h2>联系我</h2>
+            <p>点击下方按钮，看看交互效果 ✨</p>
+            <button class="btn" onclick="showMessage()">点我一下</button>
+            <p id="message" class="message"></p>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer>
+        <p>&copy; 2026 My Site. 用 ❤️ 制作</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
