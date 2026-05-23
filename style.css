@@ -293,3 +293,80 @@ img {
     #greeting { animation: none; opacity: 1; transform: none; }
     .typewriter::after { animation: none; }
 }
+
+/* ===== 关于我 ===== */
+.about-content {
+    display: flex;
+    align-items: center;
+    gap: 60px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.about-avatar {
+    flex-shrink: 0;
+}
+
+.avatar-placeholder {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: var(--gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: white;
+    box-shadow: 0 8px 30px rgba(var(--primary-rgb), 0.3);
+}
+
+.about-text p {
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    font-size: 1.1rem;
+}
+
+.social-links {
+    display: flex;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.social-link {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: all var(--transition);
+}
+
+.social-link:hover {
+    background: var(--gradient);
+    color: white;
+    border-color: transparent;
+    transform: translateY(-3px);
+}
+
+@media (max-width: 700px) {
+    .about-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 32px;
+    }
+
+    .social-links {
+        justify-content: center;
+    }
+
+    .avatar-placeholder {
+        width: 120px;
+        height: 120px;
+        font-size: 2rem;
+    }
+}
