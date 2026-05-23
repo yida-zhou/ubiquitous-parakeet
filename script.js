@@ -73,24 +73,24 @@ class BgSilk {
     get bg() { return document.documentElement.getAttribute('data-theme') === 'light' ? '248,250,252' : '10,10,26'; }
 
     initLayers() {
-        // Each layer: { count, amp, freq, speed, colorIdx, direction }
         const layerDefs = [
-            { count: 4, amp: 40, freq: 0.003, speed: 0.15, color: 0, dir: 1 },
-            { count: 3, amp: 55, freq: 0.005, speed: 0.10, color: 1, dir: -1 },
-            { count: 5, amp: 25, freq: 0.004, speed: 0.20, color: 2, dir: 1 },
-            { count: 3, amp: 35, freq: 0.002, speed: 0.08, color: 3, dir: -1 },
+            { count: 5, amp: 50, freq: 0.003, speed: 0.12, color: 0, dir: 1 },
+            { count: 4, amp: 70, freq: 0.005, speed: 0.08, color: 1, dir: -1 },
+            { count: 6, amp: 30, freq: 0.004, speed: 0.18, color: 2, dir: 1 },
+            { count: 4, amp: 45, freq: 0.002, speed: 0.06, color: 3, dir: -1 },
+            { count: 3, amp: 60, freq: 0.006, speed: 0.10, color: 1, dir: 1 },
         ];
         for (const def of layerDefs) {
             for (let i = 0; i < def.count; i++) {
                 this.layers.push({
                     offset: i / def.count,
-                    amp: def.amp + Math.random() * 15,
-                    freq: def.freq * (0.8 + Math.random() * 0.4),
-                    speed: def.speed * (0.7 + Math.random() * 0.6),
+                    amp: def.amp + Math.random() * 20,
+                    freq: def.freq * (0.7 + Math.random() * 0.6),
+                    speed: def.speed * (0.6 + Math.random() * 0.8),
                     phase: Math.random() * Math.PI * 2,
                     color: def.color,
                     dir: def.dir,
-                    blend: Math.random() * 0.5 + 0.3,
+                    blend: Math.random() * 0.3 + 0.4,
                 });
             }
         }
@@ -114,31 +114,31 @@ class BgSilk {
 
     drawSilk(ctx, w, h) {
         const c = this.colors;
-        const ripple = this.mx > 0 ? { x: this.mx, y: this.my, r: 180 } : null;
+        const ripple = this.mx > 0 ? { x: this.mx, y: this.my, r: 200 } : null;
 
         for (const layer of this.layers) {
-            const baseX = layer.offset * w;
-            const baseA = layer.blend * 0.035;
+            const baseA = layer.blend * 0.055;
             const [cr, cg, cb] = c[layer.color];
 
             ctx.beginPath();
-            const step = 8;
+            const step = 6;
 
             for (let x = -20; x <= w + 20; x += step) {
                 const t = x / w;
-                const wave = Math.sin(x * layer.freq + this.time * layer.speed + layer.phase) * layer.amp;
-                const wave2 = Math.sin(x * layer.freq * 2.3 + this.time * layer.speed * 0.7 + layer.phase * 1.5) * layer.amp * 0.3;
-                let y = h * 0.5 + wave + wave2;
-                y += Math.sin(this.time * 0.02 + t * 3) * 10;
+                const slow = this.time * 0.01;
+                const wave = Math.sin(x * layer.freq + slow * layer.speed + layer.phase) * layer.amp;
+                const wave2 = Math.sin(x * layer.freq * 2.3 + slow * layer.speed * 0.6 + layer.phase * 1.5) * layer.amp * 0.35;
+                const horiz = Math.sin(x * 0.008 + slow * 0.05) * 20;
+                let y = h * 0.5 + wave + wave2 + horiz;
+                y += Math.sin(slow * 2 + t * 4) * 8;
 
-                // 鼠标涟漪
                 if (ripple) {
                     const dx = x - ripple.x;
                     const dy = y - ripple.y;
                     const d = Math.sqrt(dx * dx + dy * dy);
                     if (d < ripple.r && d > 1) {
                         const infl = (1 - d / ripple.r) * (1 - d / ripple.r);
-                        y += Math.sin(d * 0.08 - this.time * 0.05) * infl * 25;
+                        y += Math.sin(d * 0.06 - slow * 4) * infl * 30;
                     }
                 }
 
@@ -146,7 +146,6 @@ class BgSilk {
                 else ctx.lineTo(x, y);
             }
 
-            // 闭合并填充
             ctx.lineTo(w + 20, h + 20);
             ctx.lineTo(-20, h + 20);
             ctx.closePath();
