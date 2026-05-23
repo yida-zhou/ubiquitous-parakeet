@@ -3,80 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的个人主页</title>
+    <title>个人主页</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <!-- 导航栏 -->
-    <nav class="navbar">
-        <div class="container">
-            <h1 class="logo">My Site</h1>
-            <ul class="nav-links">
+    <nav class="navbar" id="navbar">
+        <div class="container nav-container">
+            <a href="#home" class="logo">Zy.</a>
+            <ul class="nav-links" id="navLinks">
                 <li><a href="#home">首页</a></li>
                 <li><a href="#about">关于</a></li>
                 <li><a href="#skills">技能</a></li>
+                <li><a href="#projects">项目</a></li>
                 <li><a href="#contact">联系</a></li>
             </ul>
+            <button class="theme-toggle" id="themeToggle" aria-label="切换主题">🌙</button>
+            <button class="hamburger" id="hamburger" aria-label="菜单">
+                <span></span><span></span><span></span>
+            </button>
         </div>
     </nav>
 
-    <!-- 首页区域 -->
+    <!-- Hero -->
     <section id="home" class="hero">
-        <div class="container">
+        <canvas id="particleCanvas"></canvas>
+        <div class="container hero-content">
             <h2 id="greeting"></h2>
-            <p>欢迎来到我的第一个静态网站 🎉</p>
-            <a href="#about" class="btn">了解更多</a>
+            <p class="typewriter" id="typewriter"></p>
+            <a href="#about" class="btn btn-primary">探索更多 ↓</a>
         </div>
     </section>
 
-    <!-- 关于区域 -->
+    <!-- 关于 -->
     <section id="about" class="section">
         <div class="container">
-            <h2>关于我</h2>
-            <p>这是用 HTML + CSS + JavaScript 做的静态网站。</p>
-            <p>不需要数据库，不需要服务器，直接打开就能用！</p>
-        </div>
-    </section>
-
-    <!-- 技能区域 -->
-    <section id="skills" class="section bg-gray">
-        <div class="container">
-            <h2>学习路线</h2>
-            <div class="skills-grid">
-                <div class="skill-card">
-                    <h3>HTML</h3>
-                    <p>网页的结构骨架</p>
+            <h2 class="section-title">关于我</h2>
+            <div class="about-content">
+                <div class="about-avatar">
+                    <div class="avatar-placeholder">Zy</div>
                 </div>
-                <div class="skill-card">
-                    <h3>CSS</h3>
-                    <p>页面的样式美化</p>
-                </div>
-                <div class="skill-card">
-                    <h3>JavaScript</h3>
-                    <p>交互和动态效果</p>
-                </div>
-                <div class="skill-card">
-                    <h3>部署上线的3种方式</h3>
-                    <p>GitHub Pages / Vercel / Netlify</p>
+                <div class="about-text">
+                    <p>热爱前端开发，正在系统学习 HTML、CSS、JavaScript。</p>
+                    <p>这个网站是我的练习项目，用来展示学习成果和探索现代 Web 技术。</p>
+                    <div class="social-links">
+                        <a href="#" class="social-link" aria-label="GitHub">
+                            <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                        </a>
+                        <a href="#" class="social-link" aria-label="邮箱">
+                            <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- 联系区域 -->
+    <!-- 技能 -->
+    <section id="skills" class="section">
+        <div class="container">
+            <h2 class="section-title">技能</h2>
+            <div class="skills-container">
+                <div class="skill-item">
+                    <div class="skill-info">
+                        <span class="skill-name">HTML</span>
+                        <span class="skill-percent">90%</span>
+                    </div>
+                    <div class="skill-bar">
+                        <div class="skill-progress" data-target="90"></div>
+                    </div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-info">
+                        <span class="skill-name">CSS</span>
+                        <span class="skill-percent">75%</span>
+                    </div>
+                    <div class="skill-bar">
+                        <div class="skill-progress" data-target="75"></div>
+                    </div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-info">
+                        <span class="skill-name">JavaScript</span>
+                        <span class="skill-percent">60%</span>
+                    </div>
+                    <div class="skill-bar">
+                        <div class="skill-progress" data-target="60"></div>
+                    </div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-info">
+                        <span class="skill-name">前端工具</span>
+                        <span class="skill-percent">50%</span>
+                    </div>
+                    <div class="skill-bar">
+                        <div class="skill-progress" data-target="50"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 项目 -->
+    <section id="projects" class="section">
+        <div class="container">
+            <h2 class="section-title">项目</h2>
+            <div class="projects-grid">
+                <div class="project-card">
+                    <div class="project-img">项目截图</div>
+                    <div class="project-info">
+                        <h3>个人主页</h3>
+                        <p>深色主题、毛玻璃效果、粒子动画的静态网站</p>
+                        <div class="project-tags">
+                            <span>HTML</span><span>CSS</span><span>JS</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="project-card">
+                    <div class="project-img">项目截图</div>
+                    <div class="project-info">
+                        <h3>下一个项目</h3>
+                        <p>即将到来...</p>
+                        <div class="project-tags">
+                            <span>TBD</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 联系 -->
     <section id="contact" class="section">
         <div class="container">
-            <h2>联系我</h2>
-            <p>点击下方按钮，看看交互效果 ✨</p>
-            <button class="btn" onclick="showMessage()">点我一下</button>
+            <h2 class="section-title">联系我</h2>
+            <p class="contact-text">可以通过下方按钮跟我打个招呼 👋</p>
+            <button class="btn btn-primary" onclick="showMessage()">打个招呼</button>
             <p id="message" class="message"></p>
         </div>
     </section>
 
-    <!-- 页脚 -->
+    <!-- Footer -->
     <footer>
-        <p>&copy; 2026 My Site. 用 ❤️ 制作</p>
+        <p>&copy; 2026 Zy. 用 ❤️ 制作</p>
+        <button class="back-to-top" id="backToTop" aria-label="回到顶部">↑</button>
     </footer>
 
     <script src="script.js"></script>
