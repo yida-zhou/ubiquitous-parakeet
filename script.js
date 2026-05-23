@@ -188,6 +188,7 @@ class BgSilk {
         const h = this.canvas.height;
 
         ctx.clearRect(0, 0, w, h);
+        this.drawVignette(ctx, w, h);
         this.drawSilk(ctx, w, h);
         this.drawSheen(ctx, w, h);
     }
@@ -198,28 +199,37 @@ class BgSilk {
         const w = this.canvas.width;
         const h = this.canvas.height;
 
-        // 清除画布，每次干净绘制
         ctx.clearRect(0, 0, w, h);
 
+        this.drawVignette(ctx, w, h);
         this.drawSilk(ctx, w, h);
         this.drawSheen(ctx, w, h);
 
         requestAnimationFrame(() => this.animate());
     }
 
+    drawVignette(ctx, w, h) {
+        const theme = document.documentElement.getAttribute('data-theme');
+        if (theme === 'light') return;
+        const grad = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.2, w / 2, h / 2, Math.min(w, h) * 0.7);
+        grad.addColorStop(0, 'rgba(10, 10, 26, 0)');
+        grad.addColorStop(1, 'rgba(10, 10, 26, 0.3)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+    }
+
     drawSheen(ctx, w, h) {
-        // 一抹流动的光泽，像光线扫过丝绸表面
         const t = this.time * 0.005;
         const sx = w * (0.3 + 0.4 * (0.5 + 0.5 * Math.sin(t)));
         const sy = h * (0.2 + 0.6 * (0.5 + 0.5 * Math.cos(t * 0.7)));
-        const radius = Math.min(w, h) * 0.5;
+        const radius = Math.min(w, h) * 0.45;
 
         const theme = document.documentElement.getAttribute('data-theme');
-        const alpha = theme === 'light' ? 0.04 : 0.06;
+        const alpha = theme === 'light' ? 0.03 : 0.05;
         const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, radius);
-        grad.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
-        grad.addColorStop(0.4, `rgba(168, 85, 247, ${alpha * 0.3})`);
-        grad.addColorStop(1, `rgba(99, 102, 241, 0)`);
+        grad.addColorStop(0, `rgba(168, 85, 247, ${alpha})`);
+        grad.addColorStop(0.5, `rgba(129, 140, 248, ${alpha * 0.3})`);
+        grad.addColorStop(1, 'rgba(99, 102, 241, 0)');
         ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.arc(sx, sy, radius, 0, Math.PI * 2);
