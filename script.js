@@ -70,7 +70,16 @@ class ParticleSystem {
         this.resize();
         this.init();
         this.bindEvents();
-        this.animate();
+        if (!this.reducedMotion) {
+            this.animate();
+        } else {
+            this.drawStatic();
+        }
+    }
+
+    get bgRGB() {
+        const theme = document.documentElement.getAttribute('data-theme');
+        return theme === 'light' ? '248, 250, 252' : '10, 10, 26';
     }
 
     // ---- 工具函数 ----
@@ -81,10 +90,10 @@ class ParticleSystem {
     pickColor(x, y) {
         const t = (Math.sin(x * 0.005 + y * 0.003 + this.time * 0.002) * 0.5 + 0.5);
         const idx = t * (this.palette.length - 1);
-        const i = Math.floor(idx);
+        const i = Math.min(Math.floor(idx), this.palette.length - 2);
         const f = idx - i;
-        const c1 = this.palette[Math.min(i, this.palette.length - 1)];
-        const c2 = this.palette[Math.min(i + 1, this.palette.length - 1)];
+        const c1 = this.palette[i];
+        const c2 = this.palette[i + 1];
         return {
             r: Math.round(this.lerp(c1.r, c2.r, f)),
             g: Math.round(this.lerp(c1.g, c2.g, f)),
@@ -98,7 +107,7 @@ class ParticleSystem {
     }
 
     init() {
-        const count = Math.min(160, Math.floor(window.innerWidth * 0.08));
+        const count = this.reducedMotion ? 40 : Math.min(160, Math.floor(window.innerWidth * 0.08));
         for (let i = 0; i < count; i++) {
             const layer = Math.floor(Math.random() * 3); // 0,1,2 三层深度
             const speedMul = 0.3 + layer * 0.4;
@@ -117,6 +126,7 @@ class ParticleSystem {
                 color: null,
             });
         }
+        this.particles.sort((a, b) => a.layer - b.layer);
     }
 
     bindEvents() {
@@ -243,10 +253,7 @@ class ParticleSystem {
     }
 
     drawParticles(ctx) {
-        // 按层级排序（后画的在前层）
-        const sorted = [...this.particles].sort((a, b) => a.layer - b.layer);
-
-        for (const p of sorted) {
+        for (const p of this.particles) {
             if (p.alpha < 0.01) continue;
             const c = p.color;
             const glowSize = p.size * 3;
@@ -343,8 +350,8 @@ class ParticleSystem {
         const ctx = this.ctx;
         this.time++;
 
-        // 半透明叠加制造拖尾效果
-        ctx.fillStyle = `rgba(10, 10, 26, 0.15)`;
+        // 半透明叠加制造拖尾效果（适配深色/亮色模式）
+        ctx.fillStyle = `rgba(${this.bgRGB}, 0.18)`;
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         this.updateParticles();
@@ -361,6 +368,29 @@ class ParticleSystem {
         }
 
         requestAnimationFrame(() => this.animate());
+    }
+
+    drawStatic() {
+        // 减少动效模式：画静态帧
+        const ctx = this.ctx;
+        for (const p of this.particles) {
+            p.color = this.pickColor(p.x, p.y);
+            p.alpha = p.baseAlpha * 0.8;
+            const c = p.color;
+            const glowSize = p.size * 3;
+            const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
+            glow.addColorStop(0, `rgba(${c.r},${c.g},${c.b},${p.alpha * 0.3})`);
+            glow.addColorStop(1, `rgba(${c.r},${c.g},${c.b},0)`);
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, glowSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${c.r},${c.g},${c.b},${p.alpha})`;
+            ctx.fill();
+        }
+        this.drawConnections(ctx);
     }
 }
 
