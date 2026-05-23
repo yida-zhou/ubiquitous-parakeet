@@ -241,6 +241,18 @@ function setupNavbarScroll() {
     });
 }
 
+// === 滚动进度条 ===
+function setupScrollProgress() {
+    const bar = document.getElementById('scrollProgress');
+    if (!bar) return;
+    window.addEventListener('scroll', () => {
+        const scrollTop = window.scrollY;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+        bar.style.width = progress + '%';
+    });
+}
+
 // === 初始化 ===
 document.addEventListener('DOMContentLoaded', () => {
     setGreeting();
@@ -253,4 +265,5 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSkillAnimation();
     setupHamburger();
     setupNavbarScroll();
+    setupScrollProgress();
 });
