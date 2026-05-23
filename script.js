@@ -39,340 +39,144 @@ function typeWriter() {
     setTimeout(type, 800);
 }
 
-// === Canvas 粒子系统：流光 ===
-class ParticleSystem {
+// === Canvas 背景：流光滑面 ===
+class BgSilk {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
         if (!this.canvas) return;
         this.ctx = this.canvas.getContext('2d');
         if (!this.ctx) return;
 
-        this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-        // 单色系：靛蓝 → 紫（克制的高级感）
-        this.palette = [
-            { r: 99, g: 102, b: 241 },
-            { r: 120, g: 100, b: 245 },
-            { r: 140, g: 95, b: 248 },
-            { r: 168, g: 85, b: 247 },
-        ];
-
-        this.embers = [];
-        this.depthParticles = [];
-        this.mouseX = -2000;
-        this.mouseY = -2000;
-        this.prevMX = -2000;
-        this.prevMY = -2000;
-        this.mouseVX = 0;
-        this.mouseVY = 0;
+        this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        this.mx = -2000;
+        this.my = -2000;
         this.time = 0;
 
+        // 色彩：靛蓝到紫的渐变
+        this.colors = [
+            [99, 102, 241],
+            [120, 100, 245],
+            [140, 95, 248],
+            [168, 85, 247],
+        ];
+
+        // 波形层参数
+        this.layers = [];
+        this.initLayers();
+
         this.resize();
-        this.init();
-        this.bindEvents();
-        this.animateFirstFrame();
-        if (!this.reducedMotion) this.animate();
+        this.bind();
+        this.draw();
+        if (!this.reduced) this.animate();
     }
 
-    get bgRGB() {
-        const theme = document.documentElement.getAttribute('data-theme');
-        return theme === 'light' ? '248, 250, 252' : '10, 10, 26';
-    }
+    get bg() { return document.documentElement.getAttribute('data-theme') === 'light' ? '248,250,252' : '10,10,26'; }
 
-    rand(min, max) { return Math.random() * (max - min) + min; }
-
-    pickColor(t, y) {
-        // 随时间极缓慢漂移色调
-        const hueShift = Math.sin(this.time * 0.002) * 0.08;
-        let tt = Math.max(0, Math.min(1, t + hueShift));
-
-        // 垂直位置影响：上部粒子偏紫，下部偏蓝
-        const heightRatio = y !== undefined ? 1 - y / this.canvas.height : 0.5;
-        tt = Math.max(0, Math.min(1, tt + (heightRatio - 0.5) * 0.15));
-
-        const idx = tt * (this.palette.length - 1);
-        const i = Math.min(Math.floor(idx), this.palette.length - 2);
-        const f = idx - i;
-        const c1 = this.palette[i];
-        const c2 = this.palette[i + 1];
-        const r = Math.round(c1.r + (c2.r - c1.r) * f);
-        const g = Math.round(c1.g + (c2.g - c1.g) * f);
-        const b = Math.round(c1.b + (c2.b - c1.b) * f);
-        return { r, g, b };
-    }
-
-    formatRGBA(c, a) {
-        return `rgba(${c.r},${c.g},${c.b},${a})`;
+    initLayers() {
+        // Each layer: { count, amp, freq, speed, colorIdx, direction }
+        const layerDefs = [
+            { count: 4, amp: 40, freq: 0.003, speed: 0.15, color: 0, dir: 1 },
+            { count: 3, amp: 55, freq: 0.005, speed: 0.10, color: 1, dir: -1 },
+            { count: 5, amp: 25, freq: 0.004, speed: 0.20, color: 2, dir: 1 },
+            { count: 3, amp: 35, freq: 0.002, speed: 0.08, color: 3, dir: -1 },
+        ];
+        for (const def of layerDefs) {
+            for (let i = 0; i < def.count; i++) {
+                this.layers.push({
+                    offset: i / def.count,
+                    amp: def.amp + Math.random() * 15,
+                    freq: def.freq * (0.8 + Math.random() * 0.4),
+                    speed: def.speed * (0.7 + Math.random() * 0.6),
+                    phase: Math.random() * Math.PI * 2,
+                    color: def.color,
+                    dir: def.dir,
+                    blend: Math.random() * 0.5 + 0.3,
+                });
+            }
+        }
     }
 
     resize() {
-        if (!this.canvas || !this.ctx) return;
-        const oldW = this.canvas.width || window.innerWidth;
-        const oldH = this.canvas.height || window.innerHeight;
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
-        const sx = this.canvas.width / oldW;
-        const sy = this.canvas.height / oldH;
-        for (const p of this.embers) { p.x *= sx; p.y *= sy; }
-        for (const p of this.depthParticles) { p.x *= sx; p.y *= sy; }
     }
 
-    init() {
-        const count = this.reducedMotion ? 15 : Math.max(20, Math.min(55, Math.floor(window.innerWidth * 0.025)));
-
-        for (let i = 0; i < count; i++) {
-            const isDepth = i < count * 0.3;
-            this.embers.push({
-                x: this.rand(0, this.canvas.width),
-                y: this.rand(this.canvas.height * 0.1, this.canvas.height * 0.9),
-                vy: -this.rand(0.15, 0.5),
-                vx: this.rand(-0.15, 0.15),
-                driftPhase: this.rand(0, Math.PI * 2),
-                size: this.rand(2.5, 5.5),
-                alpha: this.rand(0.3, 0.7),
-                colorT: this.rand(0, 1),
-                isDepth: isDepth,
-                phase: this.rand(0, Math.PI * 2),
-            });
-        }
-
-        for (let i = 0; i < Math.floor(count * 0.5); i++) {
-            this.depthParticles.push({
-                x: this.rand(0, this.canvas.width),
-                y: this.rand(0, this.canvas.height),
-                vx: this.rand(-0.05, 0.05),
-                vy: -this.rand(0.05, 0.15),
-                size: this.rand(1, 2),
-                alpha: this.rand(0.1, 0.25),
-                colorT: this.rand(0.3, 0.8),
-                phase: this.rand(0, Math.PI * 2),
-                driftPhase: this.rand(0, Math.PI * 2),
-            });
-        }
-    }
-
-    bindEvents() {
+    bind() {
         window.addEventListener('resize', () => this.resize());
-        this.canvas.addEventListener('mousemove', (e) => {
-            this.prevMX = this.mouseX;
-            this.prevMY = this.mouseY;
-            this.mouseX = e.clientX;
-            this.mouseY = e.clientY;
-            this.mouseVX = this.mouseX - this.prevMX;
-            this.mouseVY = this.mouseY - this.prevMY;
-        });
-        this.canvas.addEventListener('mouseleave', () => {
-            this.mouseX = -2000;
-            this.mouseY = -2000;
-        });
-        // 触摸设备支持
+        this.canvas.addEventListener('mousemove', (e) => { this.mx = e.clientX; this.my = e.clientY; });
+        this.canvas.addEventListener('mouseleave', () => { this.mx = -2000; this.my = -2000; });
         this.canvas.addEventListener('touchmove', (e) => {
-            const touch = e.touches[0];
-            this.prevMX = this.mouseX;
-            this.prevMY = this.mouseY;
-            this.mouseX = touch.clientX;
-            this.mouseY = touch.clientY;
-            this.mouseVX = this.mouseX - this.prevMX;
-            this.mouseVY = this.mouseY - this.prevMY;
-        }, { passive: true });
-        this.canvas.addEventListener('touchend', () => {
-            this.mouseX = -2000;
-            this.mouseY = -2000;
+            const t = e.touches[0];
+            this.mx = t.clientX;
+            this.my = t.clientY;
         }, { passive: true });
     }
 
-    updateEmbers() {
-        for (const p of this.embers) {
-            p.phase += 0.02;
-            p.driftPhase += 0.006;
+    drawSilk(ctx, w, h) {
+        const c = this.colors;
+        const ripple = this.mx > 0 ? { x: this.mx, y: this.my, r: 180 } : null;
 
-            // 8字形水平漂移：两个不同频率的正弦波叠加
-            p.vx += Math.sin(p.driftPhase) * 0.002;
-            p.vx += Math.sin(p.driftPhase * 0.7 + 1.3) * 0.001;
+        for (const layer of this.layers) {
+            const baseX = layer.offset * w;
+            const baseA = layer.blend * 0.035;
+            const [cr, cg, cb] = c[layer.color];
 
-            // 可变浮力：上升速度周期性变化，像水中气泡
-            const buoyancy = -0.0012 + Math.sin(p.phase * 0.5) * 0.0006;
-            p.vy += buoyancy;
-
-            // 鼠标搅拌：速度增强、距离平方衰减（蜜糖般粘稠）
-            const dx = p.x - this.mouseX;
-            const dy = p.y - this.mouseY;
-            const dist = Math.hypot(dx, dy);
-            if (dist < 250 && dist > 1) {
-                const influence = 1 - dist / 250;
-                const sqInfluence = influence * influence;
-                const speedBoost = Math.min(3, Math.hypot(this.mouseVX, this.mouseVY) * 0.5 + 1);
-                const strength = sqInfluence * 0.06 * speedBoost;
-                const angle = Math.atan2(dy, dx) + Math.PI / 2;
-                p.vx += Math.cos(angle) * strength;
-                p.vy += Math.sin(angle) * strength;
-                // 径向微推（防止粒子聚集在光标下）
-                const radialStrength = sqInfluence * 0.02;
-                const radAngle = Math.atan2(dy, dx);
-                p.vx += Math.cos(radAngle) * radialStrength;
-                p.vy += Math.sin(radAngle) * radialStrength;
-            }
-
-            // 自适应限速（更大的粒子更慢，更优雅）
-            const speed = Math.hypot(p.vx, p.vy);
-            const maxSpeed = p.isDepth ? 0.4 : 0.7 - p.size * 0.03;
-            if (speed > maxSpeed) {
-                p.vx = (p.vx / speed) * maxSpeed;
-                p.vy = (p.vy / speed) * maxSpeed;
-            }
-
-            // 高阻尼：运动更粘稠、更流畅
-            p.vx *= 0.98;
-            p.vy *= 0.98;
-
-            p.x += p.vx;
-            p.y += p.vy;
-
-            // 呼吸透明度
-            p.alpha = (p.isDepth ? 0.25 : 0.5) + 0.3 * Math.sin(p.phase);
-
-            // 边界循环
-            const margin = 200;
-            if (p.y < -margin) {
-                p.y = this.canvas.height + margin;
-                p.x = this.rand(0, this.canvas.width);
-                p.colorT = this.rand(0, 1);
-            }
-            if (p.y > this.canvas.height + margin) {
-                p.y = -margin;
-                p.x = this.rand(0, this.canvas.width);
-            }
-            if (p.x < -margin) p.x = this.canvas.width + margin;
-            if (p.x > this.canvas.width + margin) p.x = -margin;
-        }
-    }
-
-    updateDepth() {
-        for (const p of this.depthParticles) {
-            p.driftPhase += 0.004;
-            p.vx += Math.sin(p.driftPhase) * 0.001;
-            p.vx += Math.sin(p.driftPhase * 0.5 + 0.8) * 0.0008;
-            p.vy += -0.0004 + Math.sin(p.driftPhase * 0.3) * 0.0002;
-
-            p.x += p.vx;
-            p.y += p.vy;
-
-            p.alpha = 0.1 + 0.1 * Math.sin(p.driftPhase * 0.5);
-
-            const margin = 100;
-            if (p.y < -margin) { p.y = this.canvas.height + margin; p.x = this.rand(0, this.canvas.width); }
-            if (p.y > this.canvas.height + margin) { p.y = -margin; p.x = this.rand(0, this.canvas.width); }
-            if (p.x < -margin) p.x = this.canvas.width + margin;
-            if (p.x > this.canvas.width + margin) p.x = -margin;
-        }
-    }
-
-    drawEmbers(ctx) {
-        for (const p of this.embers) {
-            const a = Math.min(1, p.alpha);
-            if (a < 0.01) continue;
-            const c = this.pickColor(p.colorT, p.y);
-            const size = p.size;
-
-            // 单层柔光
-            const glowRadius = size * (p.isDepth ? 4 : 6);
-            const glow = ctx.createRadialGradient(p.x, p.y, size * 0.3, p.x, p.y, glowRadius);
-            glow.addColorStop(0, this.formatRGBA(c, a * 0.2));
-            glow.addColorStop(0.4, p.isDepth ? this.formatRGBA(c, a * 0.03) : `rgba(255,255,255,${a * 0.06})`);
-            glow.addColorStop(1, this.formatRGBA(c, 0));
-            ctx.fillStyle = glow;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, glowRadius, 0, Math.PI * 2);
-            ctx.fill();
+            const step = 8;
 
-            // 核心
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
-            ctx.fillStyle = this.formatRGBA(c, a);
-            ctx.fill();
+            for (let x = -20; x <= w + 20; x += step) {
+                const t = x / w;
+                const wave = Math.sin(x * layer.freq + this.time * layer.speed + layer.phase) * layer.amp;
+                const wave2 = Math.sin(x * layer.freq * 2.3 + this.time * layer.speed * 0.7 + layer.phase * 1.5) * layer.amp * 0.3;
+                let y = h * 0.5 + wave + wave2;
+                y += Math.sin(this.time * 0.02 + t * 3) * 10;
 
-            // 高光点（仅主粒子）
-            if (!p.isDepth) {
-                ctx.beginPath();
-                ctx.arc(p.x - size * 0.25, p.y - size * 0.3, size * 0.35, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 255, ${a * 0.35})`;
-                ctx.fill();
+                // 鼠标涟漪
+                if (ripple) {
+                    const dx = x - ripple.x;
+                    const dy = y - ripple.y;
+                    const d = Math.sqrt(dx * dx + dy * dy);
+                    if (d < ripple.r && d > 1) {
+                        const infl = (1 - d / ripple.r) * (1 - d / ripple.r);
+                        y += Math.sin(d * 0.08 - this.time * 0.05) * infl * 25;
+                    }
+                }
+
+                if (x === -20) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
             }
-        }
-    }
 
-    drawDepth(ctx) {
-        for (const p of this.depthParticles) {
-            const a = Math.min(1, p.alpha);
-            if (a < 0.01) continue;
-            const c = this.pickColor(p.colorT, p.y);
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.fillStyle = this.formatRGBA(c, a * 0.5);
+            // 闭合并填充
+            ctx.lineTo(w + 20, h + 20);
+            ctx.lineTo(-20, h + 20);
+            ctx.closePath();
+            ctx.fillStyle = `rgba(${cr},${cg},${cb},${baseA})`;
             ctx.fill();
         }
     }
 
-    animateFirstFrame() {
+    draw() {
         const ctx = this.ctx;
-        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        drawAtmosphere(ctx, this.canvas.width, this.canvas.height);
-        for (const p of this.embers) p.alpha = p.isDepth ? 0.3 : 0.5;
-        for (const p of this.depthParticles) p.alpha = 0.2;
-        this.drawDepth(ctx);
-        this.drawEmbers(ctx);
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        ctx.clearRect(0, 0, w, h);
+        this.drawSilk(ctx, w, h);
     }
 
     animate() {
-        const ctx = this.ctx;
         this.time++;
+        const ctx = this.ctx;
+        const w = this.canvas.width;
+        const h = this.canvas.height;
 
-        ctx.fillStyle = `rgba(${this.bgRGB}, 0.06)`;
-        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        ctx.fillStyle = `rgba(${this.bg}, 0.06)`;
+        ctx.fillRect(0, 0, w, h);
 
-        // 底部大气雾效
-        drawAtmosphere(ctx, this.canvas.width, this.canvas.height);
-
-        this.updateDepth();
-        this.updateEmbers();
-
-        this.drawDepth(ctx);
-        this.drawEmbers(ctx);
-        this.drawMouseGlow(ctx);
+        this.drawSilk(ctx, w, h);
 
         requestAnimationFrame(() => this.animate());
     }
-
-    drawMouseGlow(ctx) {
-        const mx = this.mouseX;
-        const my = this.mouseY;
-        if (mx < 0 || my < 0) return;
-        const speed = Math.hypot(this.mouseVX, this.mouseVY);
-        const intensity = Math.min(0.4, 0.1 + speed * 0.03);
-        const radius = 100 + speed * 5;
-        const theme = document.documentElement.getAttribute('data-theme');
-        const baseAlpha = theme === 'light' ? intensity * 0.3 : intensity;
-
-        const glow = ctx.createRadialGradient(mx, my, 0, mx, my, radius);
-        glow.addColorStop(0, `rgba(99, 102, 241, ${baseAlpha})`);
-        glow.addColorStop(0.5, `rgba(129, 140, 248, ${baseAlpha * 0.3})`);
-        glow.addColorStop(1, `rgba(99, 102, 241, 0)`);
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(mx, my, radius, 0, Math.PI * 2);
-        ctx.fill();
-    }
-}
-
-// 底部大气雾效：极淡的紫色薄雾
-function drawAtmosphere(ctx, w, h) {
-    const theme = document.documentElement.getAttribute('data-theme');
-    const alpha = theme === 'light' ? 0.03 : 0.05;
-    const grad = ctx.createLinearGradient(0, h * 0.7, 0, h);
-    grad.addColorStop(0, 'rgba(99, 102, 241, 0)');
-    grad.addColorStop(1, `rgba(99, 102, 241, ${alpha})`);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, h * 0.7, w, h * 0.3);
 }
 
 // === 技能进度条动画 ===
@@ -493,7 +297,7 @@ function setupScrollProgress() {
 document.addEventListener('DOMContentLoaded', () => {
     setGreeting();
     typeWriter();
-    new ParticleSystem('particleCanvas');
+    new BgSilk('particleCanvas');
     setupThemeToggle();
     setupGreetButton();
     setupBackToTop();
