@@ -525,6 +525,10 @@ img {
     border-bottom: 1px solid var(--border-color);
 }
 
+[data-theme="light"] .mockup-browser {
+    background: rgba(0, 0, 0, 0.04);
+}
+
 .mockup-dots {
     display: flex;
     gap: 6px;
@@ -554,6 +558,10 @@ img {
     text-overflow: ellipsis;
 }
 
+[data-theme="light"] .mockup-url {
+    background: rgba(0, 0, 0, 0.05);
+}
+
 .mockup-screen {
     flex: 1;
     padding: 18px 16px;
@@ -568,6 +576,10 @@ img {
     border-radius: 3px;
     background: rgba(255, 255, 255, 0.08);
     animation: mockupPulse 2s ease-in-out infinite;
+}
+
+[data-theme="light"] .mockup-line {
+    background: rgba(0, 0, 0, 0.08);
 }
 
 .mockup-line-thick {
