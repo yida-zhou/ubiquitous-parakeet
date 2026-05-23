@@ -28,9 +28,9 @@
 
     <!-- Hero -->
     <section id="home" class="hero">
-        <canvas id="particleCanvas"></canvas>
+        <canvas id="particleCanvas" aria-hidden="true"></canvas>
         <div class="container hero-content">
-            <h2 id="greeting"></h2>
+            <h1 id="greeting"></h1>
             <p class="typewriter" id="typewriter"></p>
             <a href="#about" class="btn btn-primary">探索更多 ↓</a>
         </div>
@@ -139,7 +139,7 @@
         <div class="container">
             <h2 class="section-title">联系我</h2>
             <p class="contact-text">可以通过下方按钮跟我打个招呼 👋</p>
-            <button class="btn btn-primary" onclick="showMessage()">打个招呼</button>
+            <button class="btn btn-primary" id="greetBtn">打个招呼</button>
             <p id="message" class="message"></p>
         </div>
     </section>
