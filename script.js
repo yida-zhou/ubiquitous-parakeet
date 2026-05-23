@@ -171,11 +171,29 @@ function setupBackToTop() {
     });
 }
 
+// === 暗色/亮色模式切换 ===
+function setupThemeToggle() {
+    const btn = document.getElementById('themeToggle');
+    if (!btn) return;
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    btn.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+
+    btn.addEventListener('click', () => {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        btn.textContent = next === 'dark' ? '🌙' : '☀️';
+    });
+}
+
 // === 初始化 ===
 document.addEventListener('DOMContentLoaded', () => {
     setGreeting();
     typeWriter();
     new ParticleSystem('particleCanvas');
+    setupThemeToggle();
     setupGreetButton();
     setupBackToTop();
 });
