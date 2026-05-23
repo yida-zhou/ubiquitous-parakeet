@@ -314,6 +314,7 @@ class ParticleSystem {
     animateFirstFrame() {
         const ctx = this.ctx;
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        drawAtmosphere(ctx, this.canvas.width, this.canvas.height);
         for (const p of this.embers) p.alpha = p.isDepth ? 0.3 : 0.5;
         for (const p of this.depthParticles) p.alpha = 0.2;
         this.drawDepth(ctx);
@@ -327,6 +328,9 @@ class ParticleSystem {
         ctx.fillStyle = `rgba(${this.bgRGB}, 0.08)`;
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // 底部大气雾效
+        drawAtmosphere(ctx, this.canvas.width, this.canvas.height);
+
         this.updateDepth();
         this.updateEmbers();
 
@@ -335,6 +339,17 @@ class ParticleSystem {
 
         requestAnimationFrame(() => this.animate());
     }
+}
+
+// 底部大气雾效：极淡的紫色薄雾
+function drawAtmosphere(ctx, w, h) {
+    const theme = document.documentElement.getAttribute('data-theme');
+    const alpha = theme === 'light' ? 0.03 : 0.05;
+    const grad = ctx.createLinearGradient(0, h * 0.7, 0, h);
+    grad.addColorStop(0, 'rgba(99, 102, 241, 0)');
+    grad.addColorStop(1, `rgba(99, 102, 241, ${alpha})`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, h * 0.7, w, h * 0.3);
 }
 
 // === 技能进度条动画 ===
