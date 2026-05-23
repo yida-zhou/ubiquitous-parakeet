@@ -123,8 +123,8 @@ img {
 
 .navbar.scrolled {
     background: rgba(10, 10, 26, 0.8);
-    backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border-color);
     padding: 10px 0;
 }
@@ -178,6 +178,13 @@ img {
 
 .nav-links a:hover::after {
     width: 100%;
+}
+
+.nav-links a:focus-visible,
+.theme-toggle:focus-visible,
+.hamburger:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 4px;
 }
 
 .theme-toggle {
