@@ -189,6 +189,7 @@ class BgSilk {
 
         ctx.clearRect(0, 0, w, h);
         this.drawSilk(ctx, w, h);
+        this.drawSheen(ctx, w, h);
     }
 
     animate() {
@@ -197,12 +198,32 @@ class BgSilk {
         const w = this.canvas.width;
         const h = this.canvas.height;
 
-        ctx.fillStyle = `rgba(${this.bg}, 0.06)`;
-        ctx.fillRect(0, 0, w, h);
+        // 清除画布，每次干净绘制
+        ctx.clearRect(0, 0, w, h);
 
         this.drawSilk(ctx, w, h);
+        this.drawSheen(ctx, w, h);
 
         requestAnimationFrame(() => this.animate());
+    }
+
+    drawSheen(ctx, w, h) {
+        // 一抹流动的光泽，像光线扫过丝绸表面
+        const t = this.time * 0.005;
+        const sx = w * (0.3 + 0.4 * (0.5 + 0.5 * Math.sin(t)));
+        const sy = h * (0.2 + 0.6 * (0.5 + 0.5 * Math.cos(t * 0.7)));
+        const radius = Math.min(w, h) * 0.5;
+
+        const theme = document.documentElement.getAttribute('data-theme');
+        const alpha = theme === 'light' ? 0.04 : 0.06;
+        const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, radius);
+        grad.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+        grad.addColorStop(0.4, `rgba(168, 85, 247, ${alpha * 0.3})`);
+        grad.addColorStop(1, `rgba(99, 102, 241, 0)`);
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+        ctx.fill();
     }
 }
 
