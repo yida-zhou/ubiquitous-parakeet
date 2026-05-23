@@ -274,14 +274,15 @@ class ParticleSystem {
             const c = this.pickColor(p.colorT, p.y);
             const size = p.size;
 
-            // 单层柔光（合并内外层）
-            const glow = ctx.createRadialGradient(p.x, p.y, size * 0.3, p.x, p.y, size * (p.isDepth ? 4 : 5.5));
-            glow.addColorStop(0, this.formatRGBA(c, a * 0.25));
-            glow.addColorStop(0.3, p.isDepth ? this.formatRGBA(c, a * 0.05) : `rgba(255,255,255,${a * 0.08})`);
+            // 单层柔光
+            const glowRadius = size * (p.isDepth ? 4 : 6);
+            const glow = ctx.createRadialGradient(p.x, p.y, size * 0.3, p.x, p.y, glowRadius);
+            glow.addColorStop(0, this.formatRGBA(c, a * 0.2));
+            glow.addColorStop(0.4, p.isDepth ? this.formatRGBA(c, a * 0.03) : `rgba(255,255,255,${a * 0.06})`);
             glow.addColorStop(1, this.formatRGBA(c, 0));
             ctx.fillStyle = glow;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, size * (p.isDepth ? 4 : 5.5), 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, glowRadius, 0, Math.PI * 2);
             ctx.fill();
 
             // 核心
@@ -326,7 +327,7 @@ class ParticleSystem {
         const ctx = this.ctx;
         this.time++;
 
-        ctx.fillStyle = `rgba(${this.bgRGB}, 0.08)`;
+        ctx.fillStyle = `rgba(${this.bgRGB}, 0.06)`;
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         // 底部大气雾效
