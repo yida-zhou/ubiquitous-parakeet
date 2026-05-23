@@ -62,6 +62,8 @@ class ParticleSystem {
         this.mouseY = -2000;
         this.prevMX = -2000;
         this.prevMY = -2000;
+        this.mouseVX = 0;
+        this.mouseVY = 0;
         this.time = 0;
 
         this.resize();
@@ -154,6 +156,8 @@ class ParticleSystem {
             this.prevMY = this.mouseY;
             this.mouseX = e.clientX;
             this.mouseY = e.clientY;
+            this.mouseVX = this.mouseX - this.prevMX;
+            this.mouseVY = this.mouseY - this.prevMY;
         });
         this.canvas.addEventListener('mouseleave', () => {
             this.mouseX = -2000;
@@ -174,21 +178,23 @@ class ParticleSystem {
             const buoyancy = -0.0012 + Math.sin(p.phase * 0.5) * 0.0006;
             p.vy += buoyancy;
 
-            // 鼠标搅拌：随距离平滑衰减的旋涡力
+            // 鼠标搅拌：速度增强、距离平方衰减（蜜糖般粘稠）
             const dx = p.x - this.mouseX;
             const dy = p.y - this.mouseY;
             const dist = Math.hypot(dx, dy);
             if (dist < 250 && dist > 1) {
                 const influence = 1 - dist / 250;
-                const strength = influence * influence * 0.08;
+                const sqInfluence = influence * influence;
+                const speedBoost = Math.min(3, Math.hypot(this.mouseVX, this.mouseVY) * 0.5 + 1);
+                const strength = sqInfluence * 0.06 * speedBoost;
                 const angle = Math.atan2(dy, dx) + Math.PI / 2;
                 p.vx += Math.cos(angle) * strength;
                 p.vy += Math.sin(angle) * strength;
-                // 微弱的径向吸引/排斥
-                const radialAngle = Math.atan2(dy, dx);
-                const radialStrength = influence * 0.01;
-                p.vx += Math.cos(radialAngle) * radialStrength;
-                p.vy += Math.sin(radialAngle) * radialStrength;
+                // 径向微推（防止粒子聚集在光标下）
+                const radialStrength = sqInfluence * 0.02;
+                const radAngle = Math.atan2(dy, dx);
+                p.vx += Math.cos(radAngle) * radialStrength;
+                p.vy += Math.sin(radAngle) * radialStrength;
             }
 
             // 自适应限速（更大的粒子更慢，更优雅）
@@ -336,8 +342,29 @@ class ParticleSystem {
 
         this.drawDepth(ctx);
         this.drawEmbers(ctx);
+        this.drawMouseGlow(ctx);
 
         requestAnimationFrame(() => this.animate());
+    }
+
+    drawMouseGlow(ctx) {
+        const mx = this.mouseX;
+        const my = this.mouseY;
+        if (mx < 0 || my < 0) return;
+        const speed = Math.hypot(this.mouseVX, this.mouseVY);
+        const intensity = Math.min(0.4, 0.1 + speed * 0.03);
+        const radius = 100 + speed * 5;
+        const theme = document.documentElement.getAttribute('data-theme');
+        const baseAlpha = theme === 'light' ? intensity * 0.3 : intensity;
+
+        const glow = ctx.createRadialGradient(mx, my, 0, mx, my, radius);
+        glow.addColorStop(0, `rgba(99, 102, 241, ${baseAlpha})`);
+        glow.addColorStop(0.5, `rgba(129, 140, 248, ${baseAlpha * 0.3})`);
+        glow.addColorStop(1, `rgba(99, 102, 241, 0)`);
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(mx, my, radius, 0, Math.PI * 2);
+        ctx.fill();
     }
 }
 
