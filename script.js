@@ -188,6 +188,35 @@ function setupThemeToggle() {
     });
 }
 
+// === 滚动渐入动画 ===
+function setupScrollAnimations() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.fade-in, .fade-in-left').forEach(el => observer.observe(el));
+}
+
+// === 技能进度条动画（由 Intersection Observer 触发） ===
+function setupSkillAnimation() {
+    const skillsSection = document.querySelector('#skills');
+    const skillObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateSkillBars();
+                skillObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.3 });
+
+    skillObserver.observe(skillsSection);
+}
+
 // === 初始化 ===
 document.addEventListener('DOMContentLoaded', () => {
     setGreeting();
@@ -196,4 +225,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupThemeToggle();
     setupGreetButton();
     setupBackToTop();
+    setupScrollAnimations();
+    setupSkillAnimation();
 });
