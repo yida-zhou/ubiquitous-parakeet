@@ -78,8 +78,16 @@ class ParticleSystem {
 
     rand(min, max) { return Math.random() * (max - min) + min; }
 
-    pickColor(t) {
-        const idx = t * (this.palette.length - 1);
+    pickColor(t, y) {
+        // 随时间极缓慢漂移色调
+        const hueShift = Math.sin(this.time * 0.002) * 0.08;
+        let tt = Math.max(0, Math.min(1, t + hueShift));
+
+        // 垂直位置影响：上部粒子偏紫，下部偏蓝
+        const heightRatio = y !== undefined ? 1 - y / this.canvas.height : 0.5;
+        tt = Math.max(0, Math.min(1, tt + (heightRatio - 0.5) * 0.15));
+
+        const idx = tt * (this.palette.length - 1);
         const i = Math.min(Math.floor(idx), this.palette.length - 2);
         const f = idx - i;
         const c1 = this.palette[i];
@@ -240,28 +248,44 @@ class ParticleSystem {
     drawEmbers(ctx) {
         for (const p of this.embers) {
             if (p.alpha < 0.01) continue;
-            const c = this.pickColor(p.colorT);
+            const c = this.pickColor(p.colorT, p.y);
             const a = Math.min(1, p.alpha);
             const size = p.size;
-            const glowSize = size * (p.isDepth ? 3 : 5);
+            const glowSize = size * (p.isDepth ? 4 : 6);
 
-            const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
-            glow.addColorStop(0, this.formatRGBA(c, a * 0.25));
-            glow.addColorStop(1, this.formatRGBA(c, 0));
-            ctx.fillStyle = glow;
+            // 外层柔光
+            const outerGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
+            outerGlow.addColorStop(0, this.formatRGBA(c, a * 0.15));
+            outerGlow.addColorStop(0.5, this.formatRGBA(c, a * 0.05));
+            outerGlow.addColorStop(1, this.formatRGBA(c, 0));
+            ctx.fillStyle = outerGlow;
             ctx.beginPath();
             ctx.arc(p.x, p.y, glowSize, 0, Math.PI * 2);
             ctx.fill();
 
+            // 内层辉光
+            if (!p.isDepth) {
+                const innerGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, size * 2.5);
+                innerGlow.addColorStop(0, `rgba(255, 255, 255, ${a * 0.12})`);
+                innerGlow.addColorStop(0.4, this.formatRGBA(c, a * 0.2));
+                innerGlow.addColorStop(1, this.formatRGBA(c, 0));
+                ctx.fillStyle = innerGlow;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, size * 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 核心亮点
             ctx.beginPath();
             ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
             ctx.fillStyle = this.formatRGBA(c, a);
             ctx.fill();
 
+            // 高光点（更亮）
             if (!p.isDepth) {
                 ctx.beginPath();
-                ctx.arc(p.x - size * 0.2, p.y - size * 0.25, size * 0.3, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 255, ${a * 0.2})`;
+                ctx.arc(p.x - size * 0.25, p.y - size * 0.3, size * 0.35, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${a * 0.35})`;
                 ctx.fill();
             }
         }
@@ -270,10 +294,19 @@ class ParticleSystem {
     drawDepth(ctx) {
         for (const p of this.depthParticles) {
             if (p.alpha < 0.01) continue;
-            const c = this.pickColor(p.colorT);
+            const c = this.pickColor(p.colorT, p.y);
+            const a = Math.min(1, p.alpha);
+            const glowSize = p.size * 4;
+            const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
+            glow.addColorStop(0, this.formatRGBA(c, a * 0.15));
+            glow.addColorStop(1, this.formatRGBA(c, 0));
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, glowSize, 0, Math.PI * 2);
+            ctx.fill();
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.fillStyle = this.formatRGBA(c, Math.min(1, p.alpha));
+            ctx.fillStyle = this.formatRGBA(c, a);
             ctx.fill();
         }
     }
@@ -282,6 +315,7 @@ class ParticleSystem {
         const ctx = this.ctx;
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         for (const p of this.embers) p.alpha = p.isDepth ? 0.3 : 0.5;
+        for (const p of this.depthParticles) p.alpha = 0.2;
         this.drawDepth(ctx);
         this.drawEmbers(ctx);
     }
