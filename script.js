@@ -66,6 +66,7 @@ class ParticleSystem {
         this.mouseAngle = 0;
         this.time = 0;
         this.lastMeteor = 0;
+        this.ripple = null;
 
         this.resize();
         this.init();
@@ -138,6 +139,10 @@ class ParticleSystem {
             this.mouseY = e.clientY;
             this.mouseSpeed = this.dist(this.mouseX, this.mouseY, this.prevMouseX, this.prevMouseY);
             this.mouseAngle = Math.atan2(this.mouseY - this.prevMouseY, this.mouseX - this.prevMouseX);
+            // 鼠标快速移动时产生涟漪
+            if (this.mouseSpeed > 5) {
+                this.ripple = { x: this.mouseX, y: this.mouseY, radius: 0, maxRadius: 120, alpha: 1 };
+            }
         });
         this.canvas.addEventListener('mouseleave', () => {
             this.mouseX = -2000;
@@ -188,10 +193,22 @@ class ParticleSystem {
     }
 
     updateParticles() {
+        const cx = this.canvas.width / 2;
+        const cy = this.canvas.height / 2;
         for (const p of this.particles) {
             // 时间驱动的漂移（流动感）
             p.vx += Math.sin(this.time * 0.003 + p.phase) * 0.008;
             p.vy += Math.cos(this.time * 0.002 + p.phase * 1.3) * 0.008;
+
+            // 银河旋涡力
+            const dxc = p.x - cx;
+            const dyc = p.y - cy;
+            const dCenter = Math.sqrt(dxc * dxc + dyc * dyc);
+            if (dCenter > 50) {
+                const swirlStrength = 0.004 * (1 + p.layer * 0.5);
+                p.vx += (-dyc / dCenter) * swirlStrength;
+                p.vy += (dxc / dCenter) * swirlStrength;
+            }
 
             // 鼠标推斥
             const d = this.dist(this.mouseX, this.mouseY, p.x, p.y);
@@ -286,6 +303,7 @@ class ParticleSystem {
     drawConnections(ctx) {
         const particles = this.particles;
         const maxDist = 130;
+        const pulse = 0.7 + 0.3 * Math.sin(this.time * 0.01);
 
         for (let i = 0; i < particles.length; i++) {
             for (let j = i + 1; j < particles.length; j++) {
@@ -295,7 +313,7 @@ class ParticleSystem {
                 const d = Math.sqrt(dx * dx + dy * dy);
                 if (d > maxDist) continue;
 
-                const alpha = (1 - d / maxDist) * 0.25;
+                const alpha = (1 - d / maxDist) * 0.25 * pulse;
                 const ca = a.color, cb = b.color;
                 const avgR = Math.round((ca.r + cb.r) / 2);
                 const avgG = Math.round((ca.g + cb.g) / 2);
@@ -360,6 +378,20 @@ class ParticleSystem {
         this.drawConnections(ctx);
         this.drawParticles(ctx);
         this.drawStreaks(ctx);
+
+        // 鼠标涟漪
+        if (this.ripple) {
+            this.ripple.radius += 2;
+            this.ripple.alpha -= 0.015;
+            ctx.beginPath();
+            ctx.arc(this.ripple.x, this.ripple.y, this.ripple.radius, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(99, 102, 241, ${this.ripple.alpha * 0.4})`;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            if (this.ripple.alpha <= 0 || this.ripple.radius >= this.ripple.maxRadius) {
+                this.ripple = null;
+            }
+        }
 
         // 周期性生成流星
         if (this.time - this.lastMeteor > this.rand(200, 500) && this.streaks.length < 8) {
