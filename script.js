@@ -232,6 +232,15 @@ function setupHamburger() {
     });
 }
 
+// === 导航栏滚动效果 ===
+function setupNavbarScroll() {
+    const navbar = document.getElementById('navbar');
+    if (!navbar) return;
+    window.addEventListener('scroll', () => {
+        navbar.classList.toggle('scrolled', window.scrollY > 50);
+    });
+}
+
 // === 初始化 ===
 document.addEventListener('DOMContentLoaded', () => {
     setGreeting();
@@ -243,4 +252,5 @@ document.addEventListener('DOMContentLoaded', () => {
     setupScrollAnimations();
     setupSkillAnimation();
     setupHamburger();
+    setupNavbarScroll();
 });
