@@ -271,30 +271,33 @@ class ParticleSystem {
 
     drawParticles(ctx) {
         for (const p of this.particles) {
-            if (p.alpha < 0.01) continue;
+            const a = p.alpha;
+            if (a < 0.01) continue;
             const c = p.color;
-            const glowSize = p.size * 3;
 
-            // 外层辉光
-            const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
-            glow.addColorStop(0, `rgba(${c.r},${c.g},${c.b},${p.alpha * 0.3})`);
-            glow.addColorStop(1, `rgba(${c.r},${c.g},${c.b},0)`);
-            ctx.fillStyle = glow;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, glowSize, 0, Math.PI * 2);
-            ctx.fill();
+            // 外层辉光（layer 0 跳过节省性能）
+            if (p.layer > 0) {
+                const glowSize = p.size * 3;
+                const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
+                glow.addColorStop(0, `rgba(${c.r},${c.g},${c.b},${a * 0.3})`);
+                glow.addColorStop(1, `rgba(${c.r},${c.g},${c.b},0)`);
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, glowSize, 0, Math.PI * 2);
+                ctx.fill();
+            }
 
             // 核心亮点
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(${c.r},${c.g},${c.b},${p.alpha})`;
+            ctx.fillStyle = `rgba(${c.r},${c.g},${c.b},${a})`;
             ctx.fill();
 
             // 前方粒子加一个小高光
             if (p.layer >= 1) {
                 ctx.beginPath();
                 ctx.arc(p.x - p.size * 0.2, p.y - p.size * 0.2, p.size * 0.35, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255,255,255,${p.alpha * 0.4})`;
+                ctx.fillStyle = `rgba(255,255,255,${a * 0.4})`;
                 ctx.fill();
             }
         }
@@ -303,27 +306,28 @@ class ParticleSystem {
     drawConnections(ctx) {
         const particles = this.particles;
         const maxDist = 130;
+        const maxDistSq = maxDist * maxDist;
         const pulse = 0.7 + 0.3 * Math.sin(this.time * 0.01);
 
         for (let i = 0; i < particles.length; i++) {
+            const a = particles[i];
             for (let j = i + 1; j < particles.length; j++) {
-                const a = particles[i], b = particles[j];
+                const b = particles[j];
                 const dx = a.x - b.x;
                 const dy = a.y - b.y;
-                const d = Math.sqrt(dx * dx + dy * dy);
-                if (d > maxDist) continue;
+                const distSq = dx * dx + dy * dy;
+                if (distSq > maxDistSq || distSq < 1) continue;
 
-                const alpha = (1 - d / maxDist) * 0.25 * pulse;
+                const d = Math.sqrt(distSq);
+                const t = 1 - d / maxDist;
+                const alpha = t * 0.25 * pulse;
                 const ca = a.color, cb = b.color;
-                const avgR = Math.round((ca.r + cb.r) / 2);
-                const avgG = Math.round((ca.g + cb.g) / 2);
-                const avgB = Math.round((ca.b + cb.b) / 2);
 
                 ctx.beginPath();
                 ctx.moveTo(a.x, a.y);
                 ctx.lineTo(b.x, b.y);
-                ctx.strokeStyle = `rgba(${avgR},${avgG},${avgB},${alpha})`;
-                ctx.lineWidth = 0.5 + (1 - d / maxDist) * 0.8;
+                ctx.strokeStyle = `rgba(${(ca.r + cb.r) >> 1},${(ca.g + cb.g) >> 1},${(ca.b + cb.b) >> 1},${alpha})`;
+                ctx.lineWidth = 0.5 + t * 0.8;
                 ctx.stroke();
             }
         }
@@ -403,23 +407,25 @@ class ParticleSystem {
     }
 
     drawStatic() {
-        // 减少动效模式：画静态帧
         const ctx = this.ctx;
         for (const p of this.particles) {
             p.color = this.pickColor(p.x, p.y);
             p.alpha = p.baseAlpha * 0.8;
             const c = p.color;
-            const glowSize = p.size * 3;
-            const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
-            glow.addColorStop(0, `rgba(${c.r},${c.g},${c.b},${p.alpha * 0.3})`);
-            glow.addColorStop(1, `rgba(${c.r},${c.g},${c.b},0)`);
-            ctx.fillStyle = glow;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, glowSize, 0, Math.PI * 2);
-            ctx.fill();
+            const a = p.alpha;
+            if (p.layer > 0) {
+                const glowSize = p.size * 3;
+                const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
+                glow.addColorStop(0, `rgba(${c.r},${c.g},${c.b},${a * 0.3})`);
+                glow.addColorStop(1, `rgba(${c.r},${c.g},${c.b},0)`);
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, glowSize, 0, Math.PI * 2);
+                ctx.fill();
+            }
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(${c.r},${c.g},${c.b},${p.alpha})`;
+            ctx.fillStyle = `rgba(${c.r},${c.g},${c.b},${a})`;
             ctx.fill();
         }
         this.drawConnections(ctx);
