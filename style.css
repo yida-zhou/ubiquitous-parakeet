@@ -533,7 +533,7 @@ footer {
     transform: translateY(0);
 }
 
-.back-to-top:hover {
+.back-to-top.visible:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 25px rgba(var(--primary-rgb), 0.4);
 }
@@ -583,6 +583,10 @@ footer {
         display: flex;
     }
 
+    [data-theme="light"] .nav-links {
+        background: rgba(248, 250, 252, 0.95);
+    }
+
     .hamburger {
         display: flex;
     }
@@ -599,10 +603,6 @@ footer {
     .projects-grid {
         grid-template-columns: 1fr;
     }
-}
-
-[data-theme="light"] .nav-links {
-    background: rgba(248, 250, 252, 0.95);
 }
 
 @media (max-width: 480px) {
