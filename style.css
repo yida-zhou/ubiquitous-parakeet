@@ -288,3 +288,8 @@ img {
     #greeting { font-size: 2.2rem; }
     .hero .typewriter { font-size: 1rem; }
 }
+
+@media (prefers-reduced-motion: reduce) {
+    #greeting { animation: none; opacity: 1; transform: none; }
+    .typewriter::after { animation: none; }
+}
