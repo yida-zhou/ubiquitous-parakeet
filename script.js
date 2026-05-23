@@ -115,39 +115,67 @@ class BgSilk {
     drawSilk(ctx, w, h) {
         const c = this.colors;
         const ripple = this.mx > 0 ? { x: this.mx, y: this.my, r: 200 } : null;
+        const slow = this.time * 0.01;
 
         for (const layer of this.layers) {
-            const baseA = layer.blend * 0.055;
+            const baseA = layer.blend * 0.05;
             const [cr, cg, cb] = c[layer.color];
+            const isHoriz = layer.dir > 0;
 
             ctx.beginPath();
-            const step = 6;
+            const step = 5;
 
-            for (let x = -20; x <= w + 20; x += step) {
-                const t = x / w;
-                const slow = this.time * 0.01;
-                const wave = Math.sin(x * layer.freq + slow * layer.speed + layer.phase) * layer.amp;
-                const wave2 = Math.sin(x * layer.freq * 2.3 + slow * layer.speed * 0.6 + layer.phase * 1.5) * layer.amp * 0.35;
-                const horiz = Math.sin(x * 0.008 + slow * 0.05) * 20;
-                let y = h * 0.5 + wave + wave2 + horiz;
-                y += Math.sin(slow * 2 + t * 4) * 8;
+            if (isHoriz) {
+                // 水平波浪（横向扫描）
+                for (let x = -20; x <= w + 20; x += step) {
+                    const t = x / w;
+                    const wave = Math.sin(x * layer.freq + slow * layer.speed + layer.phase) * layer.amp;
+                    const wave2 = Math.sin(x * layer.freq * 2.3 + slow * layer.speed * 0.6 + layer.phase * 1.5) * layer.amp * 0.35;
+                    const horizDrift = Math.sin(x * 0.008 + slow * 0.05) * 20;
+                    let y = h * 0.5 + wave + wave2 + horizDrift;
+                    y += Math.sin(slow * 2 + t * 4) * 8;
 
-                if (ripple) {
-                    const dx = x - ripple.x;
-                    const dy = y - ripple.y;
-                    const d = Math.sqrt(dx * dx + dy * dy);
-                    if (d < ripple.r && d > 1) {
-                        const infl = (1 - d / ripple.r) * (1 - d / ripple.r);
-                        y += Math.sin(d * 0.06 - slow * 4) * infl * 30;
+                    if (ripple) {
+                        const dx = x - ripple.x;
+                        const dy = y - ripple.y;
+                        const d = Math.sqrt(dx * dx + dy * dy);
+                        if (d < ripple.r && d > 1) {
+                            const infl = (1 - d / ripple.r) * (1 - d / ripple.r);
+                            y += Math.sin(d * 0.06 - slow * 4) * infl * 30;
+                        }
                     }
-                }
 
-                if (x === -20) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
+                    if (x === -20) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.lineTo(w + 20, h + 20);
+                ctx.lineTo(-20, h + 20);
+            } else {
+                // 垂直波浪（纵向扫描），创造织物纹理
+                for (let y = -20; y <= h + 20; y += step) {
+                    const t = y / h;
+                    const wave = Math.sin(y * layer.freq * 0.8 + slow * layer.speed + layer.phase) * layer.amp * 0.7;
+                    const wave2 = Math.sin(y * layer.freq * 1.8 + slow * layer.speed * 0.7 + layer.phase * 1.3) * layer.amp * 0.25;
+                    let x = w * 0.5 + wave + wave2;
+                    x += Math.sin(slow * 1.5 + t * 3) * 12;
+
+                    if (ripple) {
+                        const dx = x - ripple.x;
+                        const dy = y - ripple.y;
+                        const d = Math.sqrt(dx * dx + dy * dy);
+                        if (d < ripple.r && d > 1) {
+                            const infl = (1 - d / ripple.r) * (1 - d / ripple.r);
+                            x += Math.sin(d * 0.06 - slow * 4) * infl * 25;
+                        }
+                    }
+
+                    if (y === -20) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.lineTo(w + 20, h + 20);
+                ctx.lineTo(w + 20, -20);
             }
 
-            ctx.lineTo(w + 20, h + 20);
-            ctx.lineTo(-20, h + 20);
             ctx.closePath();
             ctx.fillStyle = `rgba(${cr},${cg},${cb},${baseA})`;
             ctx.fill();
