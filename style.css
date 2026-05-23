@@ -370,3 +370,46 @@ img {
         font-size: 2rem;
     }
 }
+
+/* ===== 技能进度条 ===== */
+.skills-container {
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+.skill-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.skill-name {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.skill-percent {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-family: var(--font-mono);
+}
+
+.skill-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--bg-card);
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.skill-progress {
+    height: 100%;
+    width: 0;
+    border-radius: 4px;
+    background: var(--gradient);
+    transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}

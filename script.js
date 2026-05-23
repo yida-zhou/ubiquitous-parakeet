@@ -138,6 +138,15 @@ class ParticleSystem {
     }
 }
 
+// === 技能进度条动画 ===
+function animateSkillBars() {
+    const bars = document.querySelectorAll('.skill-progress');
+    bars.forEach(bar => {
+        const target = parseInt(bar.dataset.target);
+        bar.style.width = target + '%';
+    });
+}
+
 // === 初始化 ===
 document.addEventListener('DOMContentLoaded', () => {
     setGreeting();
