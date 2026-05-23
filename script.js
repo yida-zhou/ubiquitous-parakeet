@@ -147,9 +147,35 @@ function animateSkillBars() {
     });
 }
 
+// === 打招呼交互 ===
+function setupGreetButton() {
+    const btn = document.getElementById('greetBtn');
+    if (btn) {
+        btn.addEventListener('click', () => {
+            const msg = document.getElementById('message');
+            msg.textContent = '🎉 你好！感谢来访！';
+            msg.style.color = 'var(--primary-light)';
+        });
+    }
+}
+
+// === 回到顶部 ===
+function setupBackToTop() {
+    const btn = document.getElementById('backToTop');
+    if (!btn) return;
+    window.addEventListener('scroll', () => {
+        btn.classList.toggle('visible', window.scrollY > 400);
+    });
+    btn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+}
+
 // === 初始化 ===
 document.addEventListener('DOMContentLoaded', () => {
     setGreeting();
     typeWriter();
     new ParticleSystem('particleCanvas');
+    setupGreetButton();
+    setupBackToTop();
 });

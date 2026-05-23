@@ -476,3 +476,64 @@ img {
     color: var(--primary-light);
     border: 1px solid rgba(99, 102, 241, 0.2);
 }
+
+/* ===== 联系区域 ===== */
+.contact-text {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 1.15rem;
+    margin-bottom: 32px;
+}
+
+#contact .container {
+    text-align: center;
+}
+
+.message {
+    margin-top: 20px;
+    font-size: 1.1rem;
+    min-height: 2em;
+    color: var(--primary-light);
+}
+
+/* ===== Footer ===== */
+footer {
+    text-align: center;
+    padding: 40px 24px;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    position: relative;
+}
+
+/* 回到顶部按钮 */
+.back-to-top {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--gradient);
+    color: white;
+    border: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.3);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all var(--transition);
+    z-index: 999;
+}
+
+.back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.back-to-top:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(var(--primary-rgb), 0.4);
+}
