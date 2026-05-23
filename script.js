@@ -71,7 +71,9 @@ class ParticleSystem {
         this.resize();
         this.init();
         this.bindEvents();
+        // 初始绘制避免空白闪烁
         if (!this.reducedMotion) {
+            this.animateFirstFrame();
             this.animate();
         } else {
             this.drawStatic();
@@ -103,8 +105,16 @@ class ParticleSystem {
     }
 
     resize() {
+        const oldW = this.canvas.width || window.innerWidth;
+        const oldH = this.canvas.height || window.innerHeight;
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
+        const scaleX = this.canvas.width / oldW;
+        const scaleY = this.canvas.height / oldH;
+        for (const p of this.particles) {
+            p.x *= scaleX;
+            p.y *= scaleY;
+        }
     }
 
     init() {
@@ -366,6 +376,17 @@ class ParticleSystem {
             ctx.fillStyle = `rgba(${Math.min(255, s.r + 60)},${Math.min(255, s.g + 60)},${Math.min(255, s.b + 60)},${alpha})`;
             ctx.fill();
         }
+    }
+
+    animateFirstFrame() {
+        const ctx = this.ctx;
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        for (const p of this.particles) {
+            p.color = this.pickColor(p.x, p.y);
+            p.alpha = p.baseAlpha;
+        }
+        this.drawConnections(ctx);
+        this.drawParticles(ctx);
     }
 
     animate() {
