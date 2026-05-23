@@ -217,6 +217,21 @@ function setupSkillAnimation() {
     skillObserver.observe(skillsSection);
 }
 
+// === 汉堡菜单 ===
+function setupHamburger() {
+    const hamburger = document.getElementById('hamburger');
+    const navLinks = document.getElementById('navLinks');
+
+    hamburger.addEventListener('click', () => {
+        navLinks.classList.toggle('active');
+    });
+
+    // 点击导航链接后关闭菜单
+    navLinks.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => navLinks.classList.remove('active'));
+    });
+}
+
 // === 初始化 ===
 document.addEventListener('DOMContentLoaded', () => {
     setGreeting();
@@ -227,4 +242,5 @@ document.addEventListener('DOMContentLoaded', () => {
     setupBackToTop();
     setupScrollAnimations();
     setupSkillAnimation();
+    setupHamburger();
 });
