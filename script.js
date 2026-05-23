@@ -156,37 +156,52 @@ class ParticleSystem {
     updateEmbers() {
         for (const p of this.embers) {
             p.phase += 0.02;
-            p.driftPhase += 0.008;
+            p.driftPhase += 0.006;
 
+            // 8字形水平漂移：两个不同频率的正弦波叠加
             p.vx += Math.sin(p.driftPhase) * 0.002;
+            p.vx += Math.sin(p.driftPhase * 0.7 + 1.3) * 0.001;
 
+            // 可变浮力：上升速度周期性变化，像水中气泡
+            const buoyancy = -0.0012 + Math.sin(p.phase * 0.5) * 0.0006;
+            p.vy += buoyancy;
+
+            // 鼠标搅拌：随距离平滑衰减的旋涡力
             const dx = p.x - this.mouseX;
             const dy = p.y - this.mouseY;
             const dist = Math.hypot(dx, dy);
-            if (dist < 250) {
-                const strength = (1 - dist / 250) * 0.06;
+            if (dist < 250 && dist > 1) {
+                const influence = 1 - dist / 250;
+                const strength = influence * influence * 0.08;
                 const angle = Math.atan2(dy, dx) + Math.PI / 2;
                 p.vx += Math.cos(angle) * strength;
                 p.vy += Math.sin(angle) * strength;
+                // 微弱的径向吸引/排斥
+                const radialAngle = Math.atan2(dy, dx);
+                const radialStrength = influence * 0.01;
+                p.vx += Math.cos(radialAngle) * radialStrength;
+                p.vy += Math.sin(radialAngle) * radialStrength;
             }
 
-            p.vy += -0.001;
-
+            // 自适应限速（更大的粒子更慢，更优雅）
             const speed = Math.hypot(p.vx, p.vy);
-            const maxSpeed = p.isDepth ? 0.4 : 0.8;
+            const maxSpeed = p.isDepth ? 0.4 : 0.7 - p.size * 0.03;
             if (speed > maxSpeed) {
                 p.vx = (p.vx / speed) * maxSpeed;
                 p.vy = (p.vy / speed) * maxSpeed;
             }
 
-            p.vx *= 0.985;
-            p.vy *= 0.985;
+            // 高阻尼：运动更粘稠、更流畅
+            p.vx *= 0.98;
+            p.vy *= 0.98;
 
             p.x += p.vx;
             p.y += p.vy;
 
+            // 呼吸透明度
             p.alpha = (p.isDepth ? 0.25 : 0.5) + 0.3 * Math.sin(p.phase);
 
+            // 边界循环
             const margin = 200;
             if (p.y < -margin) {
                 p.y = this.canvas.height + margin;
@@ -204,14 +219,15 @@ class ParticleSystem {
 
     updateDepth() {
         for (const p of this.depthParticles) {
-            p.driftPhase += 0.005;
-            p.vx += Math.sin(p.driftPhase) * 0.0015;
-            p.vy += -0.0005;
+            p.driftPhase += 0.004;
+            p.vx += Math.sin(p.driftPhase) * 0.001;
+            p.vx += Math.sin(p.driftPhase * 0.5 + 0.8) * 0.0008;
+            p.vy += -0.0004 + Math.sin(p.driftPhase * 0.3) * 0.0002;
 
             p.x += p.vx;
             p.y += p.vy;
 
-            p.alpha = 0.1 + 0.12 * Math.sin(p.driftPhase);
+            p.alpha = 0.1 + 0.1 * Math.sin(p.driftPhase * 0.5);
 
             const margin = 100;
             if (p.y < -margin) { p.y = this.canvas.height + margin; p.x = this.rand(0, this.canvas.width); }
@@ -274,7 +290,7 @@ class ParticleSystem {
         const ctx = this.ctx;
         this.time++;
 
-        ctx.fillStyle = `rgba(${this.bgRGB}, 0.12)`;
+        ctx.fillStyle = `rgba(${this.bgRGB}, 0.08)`;
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         this.updateDepth();
