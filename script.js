@@ -45,6 +45,7 @@ class ParticleSystem {
         this.canvas = document.getElementById(canvasId);
         if (!this.canvas) return;
         this.ctx = this.canvas.getContext('2d');
+        if (!this.ctx) return;
 
         this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -105,6 +106,7 @@ class ParticleSystem {
     }
 
     resize() {
+        if (!this.canvas || !this.ctx) return;
         const oldW = this.canvas.width || window.innerWidth;
         const oldH = this.canvas.height || window.innerHeight;
         this.canvas.width = window.innerWidth;
@@ -116,7 +118,7 @@ class ParticleSystem {
     }
 
     init() {
-        const count = this.reducedMotion ? 15 : Math.min(55, Math.floor(window.innerWidth * 0.025));
+        const count = this.reducedMotion ? 15 : Math.max(20, Math.min(55, Math.floor(window.innerWidth * 0.025)));
 
         for (let i = 0; i < count; i++) {
             const isDepth = i < count * 0.3;
@@ -163,6 +165,20 @@ class ParticleSystem {
             this.mouseX = -2000;
             this.mouseY = -2000;
         });
+        // 触摸设备支持
+        this.canvas.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            this.prevMX = this.mouseX;
+            this.prevMY = this.mouseY;
+            this.mouseX = touch.clientX;
+            this.mouseY = touch.clientY;
+            this.mouseVX = this.mouseX - this.prevMX;
+            this.mouseVY = this.mouseY - this.prevMY;
+        }, { passive: true });
+        this.canvas.addEventListener('touchend', () => {
+            this.mouseX = -2000;
+            this.mouseY = -2000;
+        }, { passive: true });
     }
 
     updateEmbers() {
