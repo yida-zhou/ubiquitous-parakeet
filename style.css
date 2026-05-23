@@ -1,6 +1,7 @@
 /* ===== CSS 自定义属性 ===== */
 :root {
     --primary: #6366f1;
+    --primary-rgb: 99, 102, 241;
     --primary-light: #818cf8;
     --secondary: #06b6d4;
     --accent: #a855f7;
@@ -84,12 +85,12 @@ img {
 .btn-primary {
     background: var(--gradient);
     color: white;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.3);
 }
 
 .btn-primary:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 8px 25px rgba(var(--primary-rgb), 0.4);
 }
 
 /* ===== 通用 section ===== */
