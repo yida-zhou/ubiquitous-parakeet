@@ -39,7 +39,7 @@ class FlowField {
     resize() { this.c.width = window.innerWidth; this.c.height = window.innerHeight; }
 
     init() {
-        const n = this.r ? 40 : Math.max(60, Math.min(200, Math.floor(this.c.width * 0.08)));
+        const n = this.r ? 60 : Math.max(500, Math.floor(this.c.width * 0.25));
         for (let i = 0; i < n; i++) {
             this.pts.push(this.make(this.rand(0, this.c.width)));
         }
@@ -49,21 +49,14 @@ class FlowField {
         return {
             x: x !== undefined ? x : this.c.width + 20,
             y: this.rand(0, this.c.height),
-            z: this.rand(-300, 300),
-            size: this.rand(1.5, 5),
-            alpha: this.rand(0.2, 0.6),
+            z: this.rand(-400, 400),
+            size: this.rand(1, 4),
+            alpha: this.rand(0.15, 0.5),
             phase: this.rand(0, Math.PI * 2),
-            hue: this.rand(0, 1),
         };
     }
 
     rand(min, max) { return Math.random() * (max - min) + min; }
-    lerp(t) {
-        const pal = [[0,200,255],[40,100,255],[160,60,255],[200,40,240]];
-        const i = Math.min(Math.floor(t * (pal.length-1)), pal.length-2);
-        const f = t * (pal.length-1) - i;
-        return pal[i].map((v, j) => Math.round(v + (pal[i+1][j] - v) * f));
-    }
 
     bind() {
         window.addEventListener('resize', () => this.resize());
@@ -92,9 +85,9 @@ class FlowField {
 
         // 更新 & 绘制
         for (const p of this.pts) {
-            // Z 深度决定速度 (近快远慢)
-            const speedFactor = 1 + p.z / 400;
-            const speed = 0.5 + speedFactor * 1.2;
+            // Z 深度决定速度 (近快远慢, 整体更慢)
+            const speedFactor = 0.6 + (p.z + 400) / 800;
+            const speed = 0.2 + speedFactor * 0.6;
 
             // 垂直微漂移
             const drift = Math.sin(this.t * 0.005 + p.phase) * 0.15;
@@ -119,20 +112,19 @@ class FlowField {
             if (p.x < -40) {
                 Object.assign(p, this.make(w + 20));
                 p.y = this.rand(0, h);
-                p.z = this.rand(-300, 300);
+                p.z = this.rand(-400, 400);
             }
 
             // 投影
             const pp = this.project(p.x, p.y, p.z);
             const zFade = (p.z + 300) / 600;
             const a = p.alpha * (0.5 + 0.5 * Math.sin(this.t * 0.008 + p.phase)) * (0.2 + 0.8 * zFade);
-            const [r, g, b] = this.lerp(p.hue);
             const sz = p.size * (0.4 + 0.6 * zFade);
 
-            // 仅柔光光晕（无核心高亮）
-            const gr = ctx.createRadialGradient(pp.px, pp.py, 0, pp.px, pp.py, sz * 4);
-            gr.addColorStop(0, `rgba(${r},${g},${b},${a * 0.35})`);
-            gr.addColorStop(1, `rgba(${r},${g},${b},0)`);
+            // 单色柔光
+            const gr = ctx.createRadialGradient(pp.px, pp.py, 0, pp.px, pp.py, sz * 5);
+            gr.addColorStop(0, `rgba(80,160,255,${a * 0.3})`);
+            gr.addColorStop(1, `rgba(80,160,255,0)`);
             ctx.fillStyle = gr;
             ctx.beginPath();
             ctx.arc(pp.px, pp.py, sz * 4, 0, Math.PI * 2);
