@@ -32,8 +32,8 @@ function typeWriter() {
     setTimeout(type, 800);
 }
 
-// === 光粒子系统：引力 ===
-class LightParticles {
+// === 霓虹网格：深空粒子流 ===
+class NeonGrid {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
         if (!this.canvas) return;
@@ -45,37 +45,35 @@ class LightParticles {
         this.my = -2000;
         this.time = 0;
 
-        // 单色系：靛蓝 → 紫
-        this.palette = [
-            [99, 102, 241],
-            [120, 100, 245],
-            [140, 95, 248],
-            [168, 85, 247],
-        ];
+        // 霓虹配色：蓝 → 紫
+        this.palette = {
+            blue: [0, 180, 255],
+            cyan: [0, 220, 240],
+            purple: [160, 80, 255],
+            pink: [220, 60, 240],
+        };
 
-        this.particles = [];
+        // 网格节点
+        this.nodes = [];
+        // 流动粒子
+        this.flows = [];
+
         this.resize();
         this.init();
         this.bind();
+
+        // 初始绘制
+        const ctx = this.ctx;
+        ctx.fillStyle = '#06060e';
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         this.draw();
+
         if (!this.reduced) this.animate();
     }
 
-    get bgRGB() {
-        const t = document.documentElement.getAttribute('data-theme');
-        return t === 'light' ? '248,250,252' : '10,10,26';
-    }
+    get bgRGB() { return '6,6,14'; }
 
     rand(min, max) { return Math.random() * (max - min) + min; }
-
-    color(t) {
-        const idx = Math.max(0, Math.min(1, t)) * (this.palette.length - 1);
-        const i = Math.min(Math.floor(idx), this.palette.length - 2);
-        const f = idx - i;
-        return this.palette[i].map((v, j) =>
-            Math.round(v + (this.palette[i + 1][j] - v) * f)
-        );
-    }
 
     resize() {
         this.canvas.width = window.innerWidth;
@@ -83,19 +81,42 @@ class LightParticles {
     }
 
     init() {
-        const n = this.reduced ? 20 : Math.max(30, Math.min(90, Math.floor(window.innerWidth * 0.045)));
-        for (let i = 0; i < n; i++) {
-            this.particles.push({
-                x: this.rand(0, this.canvas.width),
-                y: this.rand(0, this.canvas.height),
-                vx: this.rand(-0.3, 0.3),
-                vy: this.rand(-1.5, -0.3),
-                size: this.rand(1.5, 4.5),
-                mass: this.rand(0.4, 1.2),
-                phase: this.rand(0, Math.PI * 2),
-                drift: this.rand(0.2, 0.6),
-                ct: this.rand(0, 1),
-                alpha: this.rand(0.3, 0.8),
+        // 生成网格节点
+        const cols = Math.max(6, Math.floor(this.canvas.width / 140));
+        const rows = Math.max(4, Math.floor(this.canvas.height / 120));
+        const gapX = this.canvas.width / (cols + 1);
+        const gapY = this.canvas.height / (rows + 1);
+
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const x = gapX * (c + 1) + this.rand(-8, 8);
+                const y = gapY * (r + 1) + this.rand(-8, 8);
+                this.nodes.push({
+                    x, y,
+                    ox: x, oy: y,
+                    vx: 0, vy: 0,
+                    size: this.rand(1.5, 3.5),
+                    phase: this.rand(0, Math.PI * 2),
+                    // 随机偏向蓝或紫
+                    hue: this.rand(0, 1),
+                    pulse: this.rand(0.3, 1),
+                });
+            }
+        }
+
+        // 生成流动粒子（沿网格路径移动）
+        const flowCount = Math.min(30, Math.floor(this.nodes.length * 0.4));
+        for (let i = 0; i < flowCount; i++) {
+            const from = Math.floor(this.rand(0, this.nodes.length));
+            let to = Math.floor(this.rand(0, this.nodes.length));
+            if (to === from) to = (from + 1) % this.nodes.length;
+            this.flows.push({
+                from, to,
+                t: this.rand(0, 1),
+                speed: this.rand(0.002, 0.006),
+                size: this.rand(2, 5),
+                hue: this.rand(0, 1),
+                trail: [],
             });
         }
     }
@@ -111,102 +132,192 @@ class LightParticles {
         }, { passive: true });
     }
 
-    update() {
-        const g = 0.035; // 引力常数
-        const w = this.canvas.width;
-        const h = this.canvas.height;
+    lerpColor(t) {
+        // 0=蓝, 1=紫
+        const b = this.palette.blue, p = this.palette.purple;
+        const r = Math.round(b[0] + (p[0] - b[0]) * t);
+        const g = Math.round(b[1] + (p[1] - b[1]) * t);
+        const bl = Math.round(b[2] + (p[2] - b[2]) * t);
+        return [r, g, bl];
+    }
 
-        for (const p of this.particles) {
-            // 引力：质量越大下落越快
-            p.vy += g * p.mass;
+    neonColor(t, a) {
+        const [r, g, b] = this.lerpColor(t);
+        return `rgba(${r},${g},${b},${a})`;
+    }
 
-            // 鼠标扰动（类引力推斥）
-            const dx = p.x - this.mx;
-            const dy = p.y - this.my;
+    updateNodes() {
+        for (const n of this.nodes) {
+            n.phase += 0.02;
+
+            // 柔和摆动（模拟流体）
+            const wave = Math.sin(this.time * 0.005 + n.phase) * 0.15;
+            const wave2 = Math.cos(this.time * 0.003 + n.phase * 1.3) * 0.1;
+            n.x = n.ox + wave;
+            n.y = n.oy + wave2;
+
+            // 鼠标扰动
+            const dx = n.x - this.mx;
+            const dy = n.y - this.my;
             const d = Math.hypot(dx, dy);
-            if (d < 180 && d > 1) {
-                const force = (1 - d / 180) * 0.5;
-                p.vx += (dx / d) * force;
-                p.vy += (dy / d) * force;
+            if (d < 150 && d > 1) {
+                const f = (1 - d / 150) * 2;
+                n.x += (dx / d) * f;
+                n.y += (dy / d) * f;
             }
-
-            // 水平漂移
-            p.vx += Math.sin(this.time * 0.008 + p.phase) * 0.002;
-            p.vx += Math.sin(this.time * 0.015 + p.phase * 1.7) * 0.001;
-
-            // 阻尼
-            p.vx *= 0.995;
-            p.vy *= 0.995;
-
-            p.x += p.vx;
-            p.y += p.vy;
-
-            // 到底部时重置到顶部（带随机横向偏移）
-            if (p.y > h + 20) {
-                p.y = -10;
-                p.x = this.rand(0, w);
-                p.vy = this.rand(-1.8, -0.4);
-                p.ct = this.rand(0, 1);
-            }
-            if (p.y < -30) { p.y = h + 10; }
-            if (p.x < -30) p.x = w + 20;
-            if (p.x > w + 30) p.x = -20;
-
-            // 呼吸
-            p.alpha = (0.4 + 0.4 * Math.sin(this.time * 0.01 + p.phase));
         }
     }
 
-    draw() {
-        const ctx = this.ctx;
-        const w = this.canvas.width;
-        const h = this.canvas.height;
-        ctx.clearRect(0, 0, w, h);
+    updateFlows() {
+        for (const f of this.flows) {
+            f.t += f.speed;
+            if (f.t >= 1) {
+                f.t = 0;
+                f.from = f.to;
+                f.to = Math.floor(this.rand(0, this.nodes.length));
+                if (f.to === f.from) f.to = (f.from + 1) % this.nodes.length;
+            }
 
-        for (const p of this.particles) {
-            const a = Math.min(1, p.alpha);
-            if (a < 0.01) continue;
-            const [cr, cg, cb] = this.color(p.ct);
-            const glowR = p.size * 4;
+            // 记录轨迹
+            const fromN = this.nodes[f.from];
+            const toN = this.nodes[f.to];
+            if (fromN && toN) {
+                const cx = fromN.x + (toN.x - fromN.x) * f.t;
+                const cy = fromN.y + (toN.y - fromN.y) * f.t;
+                f.trail.push({ x: cx, y: cy });
+                if (f.trail.length > 15) f.trail.shift();
+            }
+        }
+    }
 
-            // 发光光晕
-            const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
-            g.addColorStop(0, `rgba(${cr},${cg},${cb},${a * 0.25})`);
-            g.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
-            ctx.fillStyle = g;
+    drawConnections(ctx) {
+        const nodes = this.nodes;
+        const dist = 200;
+
+        for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+                const a = nodes[i], b = nodes[j];
+                const dx = a.x - b.x;
+                const dy = a.y - b.y;
+                const d = Math.hypot(dx, dy);
+                if (d > dist) continue;
+
+                const t = 1 - d / dist;
+                const alpha = t * t * 0.15;
+                const [r1, g1, b1] = this.lerpColor(a.hue);
+                const [r2, g2, b2] = this.lerpColor(b.hue);
+
+                ctx.beginPath();
+                ctx.moveTo(a.x, a.y);
+                ctx.lineTo(b.x, b.y);
+                ctx.strokeStyle = `rgba(${(r1+r2)>>1},${(g1+g2)>>1},${(b1+b2)>>1},${alpha})`;
+                ctx.lineWidth = t * 1.2;
+                ctx.stroke();
+            }
+        }
+    }
+
+    drawNodes(ctx) {
+        for (const n of this.nodes) {
+            const pulse = 0.5 + 0.5 * Math.sin(this.time * 0.01 + n.phase);
+            const alpha = n.pulse * (0.3 + 0.7 * pulse);
+            const [r, g, b] = this.lerpColor(n.hue);
+            const glowR = n.size * 4;
+
+            // 光晕
+            const glow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
+            glow.addColorStop(0, `rgba(${r},${g},${b},${alpha * 0.3})`);
+            glow.addColorStop(1, `rgba(${r},${g},${b},0)`);
+            ctx.fillStyle = glow;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+            ctx.arc(n.x, n.y, glowR, 0, Math.PI * 2);
             ctx.fill();
 
             // 核心
             ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(${cr},${cg},${cb},${a})`;
-            ctx.fill();
-
-            // 高光
-            ctx.beginPath();
-            ctx.arc(p.x - p.size * 0.2, p.y - p.size * 0.25, p.size * 0.3, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255,255,255,${a * 0.25})`;
+            ctx.arc(n.x, n.y, n.size, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${Math.min(255,r+60)},${Math.min(255,g+60)},${Math.min(255,b+60)},${alpha * 0.9})`;
             ctx.fill();
         }
+    }
+
+    drawFlows(ctx) {
+        for (const f of this.flows) {
+            const [r, g, b] = this.lerpColor(f.hue);
+            // 轨迹
+            for (let t = 0; t < f.trail.length; t++) {
+                const pt = f.trail[t];
+                const a = (t / f.trail.length) * 0.6;
+                const sz = f.size * (0.3 + 0.7 * (t / f.trail.length));
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, sz, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
+                ctx.fill();
+            }
+
+            // 流动粒子本体
+            if (f.trail.length > 0) {
+                const last = f.trail[f.trail.length - 1];
+                const glowR = f.size * 5;
+                const g = ctx.createRadialGradient(last.x, last.y, 0, last.x, last.y, glowR);
+                g.addColorStop(0, `rgba(${r},${g},${b},0.4)`);
+                g.addColorStop(1, `rgba(${r},${g},${b},0)`);
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(last.x, last.y, glowR, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(last.x, last.y, f.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255,255,255,0.85)`;
+                ctx.fill();
+            }
+        }
+    }
+
+    drawVignette(ctx) {
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+        const grad = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.15, w / 2, h / 2, Math.min(w, h) * 0.75);
+        grad.addColorStop(0, 'rgba(6,6,14,0)');
+        grad.addColorStop(1, 'rgba(6,6,14,0.5)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+    }
+
+    draw() {
+        const ctx = this.ctx;
+        this.updateNodes();
+        this.updateFlows();
+        this.drawConnections(ctx);
+        this.drawNodes(ctx);
+        this.drawFlows(ctx);
+        this.drawVignette(ctx);
     }
 
     animate() {
         this.time++;
         const ctx = this.ctx;
-        ctx.fillStyle = `rgba(${this.bgRGB}, 0.1)`;
-        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        this.update();
-        this.draw();
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        // 极淡拖尾
+        ctx.fillStyle = 'rgba(6,6,14,0.12)';
+        ctx.fillRect(0, 0, w, h);
+
+        this.updateNodes();
+        this.updateFlows();
+        this.drawConnections(ctx);
+        this.drawNodes(ctx);
+        this.drawFlows(ctx);
+
         requestAnimationFrame(() => this.animate());
     }
 }
 
 // === 技能进度条动画 ===
 function animateSkillBars() {
-    const bars = document.querySelectorAll('.skill-progress');
-    bars.forEach(bar => { bar.style.width = bar.dataset.target + '%'; });
+    document.querySelectorAll('.skill-progress').forEach(b => { b.style.width = b.dataset.target + '%'; });
 }
 
 // === 打招呼交互 ===
@@ -220,10 +331,10 @@ function setupGreetButton() {
 
 // === 回到顶部 ===
 function setupBackToTop() {
-    const btn = document.getElementById('backToTop');
-    if (!btn) return;
-    window.addEventListener('scroll', () => btn.classList.toggle('visible', window.scrollY > 400));
-    btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    const b = document.getElementById('backToTop');
+    if (!b) return;
+    window.addEventListener('scroll', () => b.classList.toggle('visible', window.scrollY > 400));
+    b.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 }
 
 // === 暗色/亮色模式切换 ===
@@ -234,16 +345,16 @@ function setupThemeToggle() {
     document.documentElement.setAttribute('data-theme', saved);
     btn.textContent = saved === 'dark' ? '🌙' : '☀️';
     btn.addEventListener('click', () => {
-        const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-        btn.textContent = next === 'dark' ? '🌙' : '☀️';
+        const n = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', n);
+        localStorage.setItem('theme', n);
+        btn.textContent = n === 'dark' ? '🌙' : '☀️';
     });
 }
 
 // === 滚动渐入动画 ===
 function setupScrollAnimations() {
-    const o = new IntersectionObserver((es) => {
+    const o = new IntersectionObserver(es => {
         es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); o.unobserve(e.target); } });
     }, { threshold: 0.15 });
     document.querySelectorAll('.fade-in, .fade-in-left').forEach(el => o.observe(el));
@@ -251,7 +362,7 @@ function setupScrollAnimations() {
 
 // === 技能进度条动画（由 Intersection Observer 触发） ===
 function setupSkillAnimation() {
-    const o = new IntersectionObserver((es) => {
+    const o = new IntersectionObserver(es => {
         es.forEach(e => { if (e.isIntersecting) { animateSkillBars(); o.unobserve(e.target); } });
     }, { threshold: 0.3 });
     o.observe(document.querySelector('#skills'));
@@ -286,7 +397,7 @@ function setupScrollProgress() {
 document.addEventListener('DOMContentLoaded', () => {
     setGreeting();
     typeWriter();
-    new LightParticles('particleCanvas');
+    new NeonGrid('particleCanvas');
     setupThemeToggle();
     setupGreetButton();
     setupBackToTop();
