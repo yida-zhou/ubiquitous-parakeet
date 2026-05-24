@@ -87,7 +87,7 @@ class FlowField {
         for (const p of this.pts) {
             // Z 深度决定速度 (近快远慢, 整体更慢)
             const speedFactor = 0.6 + (p.z + 400) / 800;
-            const speed = 0.2 + speedFactor * 0.6;
+            const speed = 0.02 + speedFactor * 0.06;
 
             // 垂直微漂移
             const drift = Math.sin(this.t * 0.005 + p.phase) * 0.15;
@@ -122,7 +122,7 @@ class FlowField {
             const sz = p.size * (0.4 + 0.6 * zFade);
 
             // 单色柔光
-            const gr = ctx.createRadialGradient(pp.px, pp.py, 0, pp.px, pp.py, sz * 5);
+            const gr = ctx.createRadialGradient(pp.px, pp.py, 0, pp.px, pp.py, sz * 2.5);
             gr.addColorStop(0, `rgba(80,160,255,${a * 0.3})`);
             gr.addColorStop(1, `rgba(80,160,255,0)`);
             ctx.fillStyle = gr;
